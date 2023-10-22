@@ -30,10 +30,16 @@ def get_type(r):
     return "CREDIT"
 
 
-def filter_internal(r) -> bool:
+def is_internal(r) -> bool:
     if r["Payment type"] == "Internal Transfer":
-        return False
-    return True
+        return True
+    return False
+
+
+def get_id(r):
+    if is_internal(r):
+        return r["Receipt number"]
+    return r["Transaction ID"]
 
 
 def get_account(r):
@@ -52,12 +58,11 @@ mapping = {
     "parse_fmt": "%d-%m-%y",
     "amount": get_amount,
     "type": get_type,
-    "filter": filter_internal,
     "account": get_account,
     "description": itemgetter("Description"),
     "payee": itemgetter("Description"),
     "class": itemgetter("Category"),
-    "id": itemgetter("Transaction ID"),
+    "id": get_id,
 }
 
 ofx = OFX(mapping)
