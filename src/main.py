@@ -43,12 +43,14 @@ def get_id(r):
 
 
 def get_account(r):
-    account = r["From account"]
-    if account:
-        return account
+    to_acc = r["To account"]
+    from_acc = r["From account"]
 
-    # occurs when getting credits
-    return r["To account"]
+    if r["Credit"]:
+        if to_acc:
+            return to_acc
+
+    return from_acc
 
 
 mapping = {
