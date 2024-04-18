@@ -9,6 +9,9 @@ from operator import itemgetter
 
 from pathlib import Path
 import click
+from dateutil.parser import parse as parse_dttm
+
+from datetime import datetime
 
 
 def parse_date(r):
@@ -16,6 +19,30 @@ def parse_date(r):
 
     [time, date] = raw.split(None, 1)
     return date
+
+
+def get_timespan_for_records(csv_by_acc: dict[str, list]):
+    out: dict[str, datetime] = {}
+
+    for acc in csv_by_acc:
+        records = csv_by_acc[acc]
+
+        for r in records:
+            stripped_date = parse_date(r)
+            parsed_date: datetime = parse_dttm(stripped_date, dayfirst=True)
+
+            if "min" not in out:
+                out["min"] = parsed_date
+
+            if "max" not in out:
+                out["max"] = parsed_date
+
+            if parsed_date < out["min"]:
+                out["min"] = parsed_date
+
+            if parsed_date > out["max"]:
+                out["max"] = parsed_date
+    return out
 
 
 def get_amount(r):
@@ -129,6 +156,13 @@ def read_data(file_in, folder_out):
 
     csv_by_account = read_csv_into_accounts(file_in)
 
+    timespan = get_timespan_for_records(csv_by_account)
+
+    time_format_out = "%Y-%m-%d"
+
+    max_time = datetime.strftime(timespan["max"], time_format_out)
+    min_time = datetime.strftime(timespan["min"], time_format_out)
+
     content_by_account = {}
 
     for acc in csv_by_account:
@@ -137,7 +171,7 @@ def read_data(file_in, folder_out):
     for acc in content_by_account:
         content = content_by_account[acc]
 
-        out_path = Path(folder_out) / f"ubank_data_{acc}.ofx"
+        out_path = Path(folder_out) / f"ubank_data_{acc}_{min_time}_{max_time}.ofx"
 
         # Throw error if path traversal somehow
         out_path.relative_to(folder_out)
